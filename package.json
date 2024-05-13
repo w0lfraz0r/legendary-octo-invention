@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "express": "^4.19.2",
+    "pg": "^8.11.5",
     "typescript": "^5.4.5"
   },
   "name": "legendary-octo-invention",
@@ -16,6 +17,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/pg": "^8.11.6",
     "nodemon": "^3.1.0"
   }
 }
