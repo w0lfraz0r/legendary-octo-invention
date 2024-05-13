@@ -1,64 +1,42 @@
-import { Book, PrismaClient } from "@prisma/client"
+import express, { Request, Response } from "express"
+import dbPrismaService from "./dbPrismaService"
 
-class DBPrismaService {
-  private prisma = new PrismaClient()
+const app = express()
+app.use(express.json())
 
-  public async getBooks(): Promise<Book[]> {
-    const foundBooks = await this.prisma.book.findMany()
-    return foundBooks
-  }
+const port = 3000
 
-  public async insertBook(book: {
-    title: string
-    author: string
-    published: boolean
-  }): Promise<Book> {
-    const createdBook = await this.prisma.book.create({ data: book })
-    return createdBook
-  }
+app.get("/books", async (req: Request, res: Response) => {
+  const books = await dbPrismaService.getBooks()
+  res.status(200).json(books)
+})
 
-  public async getBookById(id: number): Promise<Book> {
-    const foundBook: Book = await this.prisma.book.findUniqueOrThrow({
-      where: {
-        id: id,
-      },
-    })
-    return foundBook
-  }
+app.get("/books/:id", async (req: Request, res: Response) => {
+  const { id } = req.params
+  const foundBook = await dbPrismaService.getBookById(Number(id))
+  res.status(200).json(foundBook)
+})
 
-  public async updateBookById(
-    id: number,
-    book: {
-      title: string | undefined
-      author: string | undefined
-      published: boolean | undefined
-    }
-  ): Promise<Book> {
-    const data = new Map()
-    Object.keys(book).forEach((key) => {
-      const value = book[key as keyof typeof book]
-      if (value) {
-        data.set(key, value)
-      }
-    })
+app.post("/books", async (req: Request, res: Response) => {
+  const { title, author, published } = req.body
+  const newBook = await dbPrismaService.insertBook({ title, author, published })
+  res.status(201).json(newBook)
+})
 
-    const updatedBook: Book = await this.prisma.book.update({
-      where: {
-        id: id,
-      },
-      data: Object.fromEntries(data),
-    })
-    return updatedBook
-  }
+app.put("/books/:id", async (req: Request, res: Response) => {
+  const { title, author, published } = req.body
+  const { id } = req.params
+  const updatedBook = { title, author, published }
+  const result = await dbPrismaService.updateBookById(Number(id), updatedBook)
+  res.status(200).json(result)
+})
 
-  public async deleteBook(id: number): Promise<void> {
-    await this.prisma.book.delete({
-      where: {
-        id: id,
-      },
-    })
-    return
-  }
-}
+app.delete("/books/:id", (req: Request, res: Response) => {
+  const { id } = req.params
+  dbPrismaService.deleteBook(Number(id))
+  res.sendStatus(200)
+})
 
-export default new DBPrismaService()
+app.listen(port, () => {
+  console.log(`Server started listening on port ${port}`)
+})

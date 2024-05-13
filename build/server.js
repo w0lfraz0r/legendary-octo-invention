@@ -8,61 +8,41 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const client_1 = require("@prisma/client");
-class DBPrismaService {
-    constructor() {
-        this.prisma = new client_1.PrismaClient();
-    }
-    getBooks() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const foundBooks = yield this.prisma.book.findMany();
-            return foundBooks;
-        });
-    }
-    insertBook(book) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const createdBook = yield this.prisma.book.create({ data: book });
-            return createdBook;
-        });
-    }
-    getBookById(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const foundBook = yield this.prisma.book.findUniqueOrThrow({
-                where: {
-                    id: id,
-                },
-            });
-            return foundBook;
-        });
-    }
-    updateBookById(id, book) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const data = new Map();
-            Object.keys(book).forEach((key) => {
-                const value = book[key];
-                if (value) {
-                    data.set(key, value);
-                }
-            });
-            const updatedBook = yield this.prisma.book.update({
-                where: {
-                    id: id,
-                },
-                data: Object.fromEntries(data),
-            });
-            return updatedBook;
-        });
-    }
-    deleteBook(id) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.prisma.book.delete({
-                where: {
-                    id: id,
-                },
-            });
-            return;
-        });
-    }
-}
-exports.default = new DBPrismaService();
+const express_1 = __importDefault(require("express"));
+const dbPrismaService_1 = __importDefault(require("./dbPrismaService"));
+const app = (0, express_1.default)();
+app.use(express_1.default.json());
+const port = 3000;
+app.get("/books", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const books = yield dbPrismaService_1.default.getBooks();
+    res.status(200).json(books);
+}));
+app.get("/books/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const foundBook = yield dbPrismaService_1.default.getBookById(Number(id));
+    res.status(200).json(foundBook);
+}));
+app.post("/books", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { title, author, published } = req.body;
+    const newBook = yield dbPrismaService_1.default.insertBook({ title, author, published });
+    res.status(201).json(newBook);
+}));
+app.put("/books/:id", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { title, author, published } = req.body;
+    const { id } = req.params;
+    const updatedBook = { title, author, published };
+    const result = yield dbPrismaService_1.default.updateBookById(Number(id), updatedBook);
+    res.status(200).json(result);
+}));
+app.delete("/books/:id", (req, res) => {
+    const { id } = req.params;
+    dbPrismaService_1.default.deleteBook(Number(id));
+    res.sendStatus(200);
+});
+app.listen(port, () => {
+    console.log(`Server started listening on port ${port}`);
+});
